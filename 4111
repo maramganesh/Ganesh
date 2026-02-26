@@ -1,0 +1,128 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Circle {
+    double x, y, r;
+    double top() const { return y + r; }
+};
+
+const double EPS = 1e-9;
+
+double upperY(const Circle &c, double px) {
+    double dx = px - c.x;
+    if (fabs(dx) > c.r) return -1e18;
+    return c.y + sqrt(max(0.0, c.r*c.r - dx*dx));
+}
+
+double maxSurface(const vector<Circle>& v, int i, int j, double px) {
+    double best = -1e18;
+    for (int k = i; k <= j; k++)
+        best = max(best, upperY(v[k], px));
+    return best;
+}
+
+double H_global;
+const vector<Circle>* Vptr;
+int Li, Rj;
+
+double f(double x) {
+    double surface = maxSurface(*Vptr, Li, Rj, x);
+    if (surface < H_global)
+        return H_global - surface;
+    return 0.0;
+}
+
+// Simpson's rule
+double simpson(double L, double R) {
+    double mid = (L + R) / 2;
+    return (f(L) + 4*f(mid) + f(R)) * (R - L) / 6.0;
+}
+
+double adaptive(double L, double R, double eps, double whole) {
+    double mid = (L + R) / 2;
+    double left = simpson(L, mid);
+    double right = simpson(mid, R);
+
+    if (fabs(left + right - whole) < 15 * eps)
+        return left + right + (left + right - whole) / 15.0;
+
+    return adaptive(L, mid, eps/2, left)
+         + adaptive(mid, R, eps/2, right);
+}
+
+double integrate(double L, double R) {
+    double whole = simpson(L, R);
+    return adaptive(L, R, 1e-6, whole);
+}
+
+bool intersect(const Circle& a, const Circle& b, double &L, double &R) {
+    double dx = b.x - a.x;
+    double dy = b.y - a.y;
+    double d = sqrt(dx*dx + dy*dy);
+
+    if (d >= a.r + b.r - EPS) return false;
+    if (d <= fabs(a.r - b.r) + EPS) return false;
+
+    double x = (d*d - b.r*b.r + a.r*a.r) / (2*d);
+    double h = sqrt(max(0.0, a.r*a.r - x*x));
+
+    double xm = a.x + x * dx / d;
+
+    double rx = -dy * (h/d);
+    double x1 = xm + rx;
+    double x2 = xm - rx;
+
+    L = min(x1, x2);
+    R = max(x1, x2);
+    return true;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int N;
+    cin >> N;
+
+    vector<Circle> v(N);
+    for (int i = 0; i < N; i++)
+        cin >> v[i].x >> v[i].y >> v[i].r;
+
+    sort(v.begin(), v.end(),
+        [](const Circle &a, const Circle &b) {
+            if (fabs(a.x - b.x) > EPS)
+                return a.x < b.x;
+            return a.top() < b.top();
+        });
+
+    double ans = 0.0;
+
+    for (int i = 0; i < N; i++) {
+        for (int j = i + 1; j < N; j++) {
+
+            double L, R;
+            if (!intersect(v[i], v[j], L, R))
+                continue;
+
+            double H = min(v[i].top(), v[j].top());
+
+            double maxMid = -1e18;
+            for (int k = i+1; k < j; k++)
+                maxMid = max(maxMid, v[k].top());
+
+            if (maxMid >= H - EPS)
+                continue;
+
+            H_global = H;
+            Vptr = &v;
+            Li = i;
+            Rj = j;
+
+            double area = integrate(L, R);
+            ans = max(ans, area);
+        }
+    }
+
+    cout << fixed << setprecision(2) << ans << "\n";
+    return 0;
+}
