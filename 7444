@@ -1,0 +1,105 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+int R, C, N;
+vector<vector<pair<int,int>>> threat;
+vector<vector<long long>> threatMask;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    cin >> R >> C;
+    cin >> N;
+
+    int total = R * C;
+
+    threat.resize(N);
+
+    for (int i = 0; i < N; i++) {
+        int k;
+        cin >> k;
+        while (k--) {
+            int dr, dc;
+            cin >> dr >> dc;
+            threat[i].push_back({dr, dc});
+        }
+    }
+
+    threatMask.assign(N, vector<long long>(total, 0));
+
+    for (int i = 0; i < N; i++) {
+        for (int cell = 0; cell < total; cell++) {
+
+            int r = cell / C;
+            int c = cell % C;
+
+            long long mask = 0;
+
+            for (auto &t : threat[i]) {
+                int nr = r + t.first;
+                int nc = c + t.second;
+
+                if (nr < 0 || nr >= R || nc < 0 || nc >= C)
+                    continue;
+
+                int ncell = nr * C + nc;
+                mask |= (1LL << ncell);
+            }
+
+            threatMask[i][cell] = mask;
+        }
+    }
+
+    int ans = 0;
+
+    for (int subset = 0; subset < (1 << N); subset++) {
+
+        int cnt = __builtin_popcount(subset);
+        if (cnt <= ans) continue;
+
+        vector<int> travellers;
+        for (int i = 0; i < N; i++)
+            if (subset & (1 << i))
+                travellers.push_back(i);
+
+        function<bool(int, long long, long long)> place =
+        [&](int idx, long long occupied, long long threatened) {
+
+            if (idx == travellers.size())
+                return true;
+
+            int t = travellers[idx];
+
+            for (int cell = 0; cell < total; cell++) {
+
+                // already occupied
+                if (occupied & (1LL << cell)) continue;
+
+                // already threatened by someone
+                if (threatened & (1LL << cell)) continue;
+
+                long long newThreat = threatMask[t][cell];
+
+                // self-threat check (important!)
+                if (newThreat & (1LL << cell)) continue;
+
+                // new traveler threatens existing ones
+                if (newThreat & occupied) continue;
+
+                if (place(idx + 1,
+                          occupied | (1LL << cell),
+                          threatened | newThreat))
+                    return true;
+            }
+
+            return false;
+        };
+
+        if (place(0, 0, 0))
+            ans = cnt;
+    }
+
+    cout << ans << "\n";
+    return 0;
+}
