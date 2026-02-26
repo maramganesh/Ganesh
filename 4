@@ -1,0 +1,90 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Circle {
+    double x, y, r;
+    double top() const { return y + r; }
+};
+
+const double EPS = 1e-9;
+
+double upperY(const Circle &c, double px) {
+    double dx = px - c.x;
+    if (fabs(dx) > c.r) return -1e18;
+    return c.y + sqrt(max(0.0, c.r*c.r - dx*dx));
+}
+
+double maxSurface(const vector<Circle>& v, int i, int j, double px) {
+    double best = -1e18;
+    for (int k = i; k <= j; k++) {
+        best = max(best, upperY(v[k], px));
+    }
+    return best;
+}
+
+double integrate(const vector<Circle>& v, int i, int j,
+                 double L, double R, double H) {
+
+    int STEPS = 5000;  // high precision
+    double dx = (R - L) / STEPS;
+    double area = 0.0;
+
+    for (int s = 0; s < STEPS; s++) {
+        double x1 = L + s * dx;
+        double x2 = x1 + dx;
+        double mid = (x1 + x2) / 2.0;
+
+        double surface = maxSurface(v, i, j, mid);
+        if (surface < H) {
+            area += (H - surface) * dx;
+        }
+    }
+
+    return area;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int N;
+    cin >> N;
+
+    vector<Circle> v(N);
+    for (int i = 0; i < N; i++)
+        cin >> v[i].x >> v[i].y >> v[i].r;
+
+    sort(v.begin(), v.end(),
+         [](const Circle &a, const Circle &b) {
+             if (fabs(a.x - b.x) > EPS)
+                 return a.x < b.x;
+             return a.top() < b.top();
+         });
+
+    double ans = 0.0;
+
+    for (int i = 0; i < N; i++) {
+        for (int j = i + 1; j < N; j++) {
+
+            double H = min(v[i].top(), v[j].top());
+
+            double maxMid = -1e18;
+            for (int k = i + 1; k < j; k++)
+                maxMid = max(maxMid, v[k].top());
+
+            if (maxMid >= H - EPS)
+                continue;
+
+            double L = v[i].x;
+            double R = v[j].x;
+
+            if (R - L <= EPS) continue;
+
+            double area = integrate(v, i, j, L, R, H);
+            ans = max(ans, area);
+        }
+    }
+
+    cout << fixed << setprecision(2) << ans << "\n";
+    return 0;
+}
