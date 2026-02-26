@@ -1,0 +1,97 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+int R, C, N;
+int totalCells;
+
+vector<vector<pair<int,int>>> threats;
+vector<vector<unsigned long long>> threatMask; // [traveler][cell] -> threatened cells mask
+int bestAns = 0;
+
+void dfs(int idx, int placedCount,
+         unsigned long long occupied,
+         unsigned long long threatened,
+         unsigned long long usedMask) {
+
+    if (idx == N) {
+        bestAns = max(bestAns, placedCount);
+        return;
+    }
+
+    // Prune: even if we take all remaining travelers
+    if (placedCount + (N - idx) <= bestAns) return;
+
+    // Option 1: skip this traveler
+    dfs(idx + 1, placedCount, occupied, threatened, usedMask);
+
+    // Option 2: try placing this traveler
+    int t = idx;
+
+    for (int cell = 0; cell < totalCells; cell++) {
+        unsigned long long bit = 1ULL << cell;
+
+        if (occupied & bit) continue;       // already occupied
+        if (threatened & bit) continue;     // threatened by others
+
+        unsigned long long newThreat = threatMask[t][cell];
+
+        if (newThreat & occupied) continue; // would threaten someone already placed
+
+        dfs(idx + 1,
+            placedCount + 1,
+            occupied | bit,
+            threatened | newThreat,
+            usedMask | (1ULL << t));
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    cin >> R >> C;
+    cin >> N;
+
+    totalCells = R * C;
+
+    threats.resize(N);
+
+    for (int i = 0; i < N; i++) {
+        int K;
+        cin >> K;
+        while (K--) {
+            int dr, dc;
+            cin >> dr >> dc;
+            threats[i].push_back({dr, dc});
+        }
+    }
+
+    threatMask.assign(N, vector<unsigned long long>(totalCells, 0));
+
+    for (int i = 0; i < N; i++) {
+        for (int cell = 0; cell < totalCells; cell++) {
+            int r = cell / C;
+            int c = cell % C;
+
+            unsigned long long mask = 0;
+
+            for (auto &p : threats[i]) {
+                int nr = r + p.first;
+                int nc = c + p.second;
+
+                if (nr < 0 || nr >= R || nc < 0 || nc >= C)
+                    continue;
+
+                int ncell = nr * C + nc;
+                mask |= (1ULL << ncell);
+            }
+
+            threatMask[i][cell] = mask;
+        }
+    }
+
+    dfs(0, 0, 0ULL, 0ULL, 0ULL);
+
+    cout << bestAns << "\n";
+    return 0;
+}
