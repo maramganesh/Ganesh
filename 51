@@ -1,0 +1,182 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+map<string,char> mp;
+
+string getPattern(vector<string>& a,int pos){
+    string s="";
+    for(int i=0;i<3;i++)
+        for(int j=0;j<3;j++)
+            s+=a[i][pos*3+j];
+    return s;
+}
+
+long long evaluate(vector<string> tokens,string precedence){
+    vector<string> t=tokens;
+
+    for(char op:precedence){
+        for(int i=0;i<t.size();){
+            if(t[i]==string(1,op)){
+                long long x=stoll(t[i-1]);
+                long long y=stoll(t[i+1]);
+
+                long long z=0;
+
+                if(op=='+') z=x+y;
+                else if(op=='-') z=x-y;
+                else if(op=='*') z=x*y;
+                else if(op=='/'){
+                    if(y==0) return LLONG_MIN; // avoid divide by zero
+                    z=x/y;
+                }
+
+                t[i-1]=to_string(z);
+                t.erase(t.begin()+i,t.begin()+i+2);
+            }
+            else i++;
+        }
+    }
+
+    if(t.empty()) return LLONG_MIN;
+    return stoll(t[0]);
+}
+
+int main(){
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    // Digit mappings
+    mp[" _ | ||_|"]= '0';
+    mp["     |  |"]= '1';
+    mp[" _  _||_ "]= '2';
+    mp[" _  _| _|"]= '3';
+    mp["   |_|  |"]= '4';
+    mp[" _ |_  _|"]= '5';
+    mp[" _ |_ |_|"]= '6';
+    mp[" _   |  |"]= '7';
+    mp[" _ |_||_|"]= '8';
+    mp[" _ |_| _|"]= '9';
+
+    // Operators
+    mp["     _  "]='+';
+    mp["    _   "]='-';
+    mp[" _ |_| _"]='*';
+    mp["   | _ |"]='/';
+
+    int n; 
+    cin>>n;
+
+    vector<string> grid(3);
+    cin.ignore();
+
+    for(int i=0;i<3;i++)
+        getline(cin,grid[i]);
+
+    string precedence;
+    cin>>precedence;
+
+    int f;
+    cin>>f;
+
+    map<int,set<int>> fixedSegments;
+
+    while(f--){
+        string s; 
+        cin>>s;
+        int pos=s[0]-'1';
+        for(int i=1;i<s.size();i++)
+            fixedSegments[pos].insert(s[i]-'A');
+    }
+
+    int l;
+    cin>>l;
+
+    map<int,vector<vector<int>>> links;
+
+    while(l--){
+        string s; 
+        cin>>s;
+        int pos=s[0]-'1';
+        vector<int> v;
+        for(int i=1;i<s.size();i++)
+            v.push_back(s[i]-'A');
+        links[pos].push_back(v);
+    }
+
+    vector<string> tokens;
+
+    for(int i=0;i<n;i++){
+        string pattern=getPattern(grid,i);
+        if(!mp.count(pattern)){
+            cout<<0;
+            return 0;
+        }
+        tokens.push_back(string(1,mp[pattern]));
+    }
+
+    long long answer=LLONG_MIN;
+
+    for(int i=0;i<n;i++){
+
+        string original=getPattern(grid,i);
+
+        for(int seg=0;seg<9;seg++){
+
+            vector<int> toggleGroup={seg};
+
+            for(auto &v:links[i]){
+                if(find(v.begin(),v.end(),seg)!=v.end()){
+                    toggleGroup=v;
+                    break;
+                }
+            }
+
+            bool valid=true;
+            for(int x:toggleGroup)
+                if(fixedSegments[i].count(x))
+                    valid=false;
+
+            if(!valid) continue;
+
+            string modified=original;
+
+            for(int x:toggleGroup)
+                modified[x]=(modified[x]==' ')?'_':' ';
+
+            if(!mp.count(modified))
+                continue;
+
+            vector<string> newTokens=tokens;
+            newTokens[i]=string(1,mp[modified]);
+
+            // Merge digits into full numbers
+            vector<string> finalTokens;
+            string current="";
+
+            for(auto &x:newTokens){
+                if(isdigit(x[0]))
+                    current+=x;
+                else{
+                    if(!current.empty())
+                        finalTokens.push_back(current);
+                    finalTokens.push_back(x);
+                    current="";
+                }
+            }
+
+            if(!current.empty())
+                finalTokens.push_back(current);
+
+            long long value=evaluate(finalTokens,precedence);
+
+            answer=max(answer,value);
+        }
+    }
+
+    if(answer==LLONG_MIN)
+        cout<<0;
+    else
+        cout<<answer;
+
+    return 0;
+}
