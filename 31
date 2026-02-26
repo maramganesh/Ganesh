@@ -1,0 +1,107 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct Edge {
+    int x1, y1, x2, y2;
+};
+
+set<pair<int,int>> buildShape(vector<Edge> &edges) {
+    set<pair<int,int>> cells;
+
+    // Find bounding box
+    int minx = INT_MAX, maxx = INT_MIN;
+    int miny = INT_MAX, maxy = INT_MIN;
+
+    for (auto &e : edges) {
+        minx = min({minx, e.x1, e.x2});
+        maxx = max({maxx, e.x1, e.x2});
+        miny = min({miny, e.y1, e.y2});
+        maxy = max({maxy, e.y1, e.y2});
+    }
+
+    // For each unit square in bounding box
+    for (int x = minx; x < maxx; x++) {
+        for (int y = miny; y < maxy; y++) {
+
+            int midx = x;
+            int midy = y;
+
+            // Ray casting to check if inside polygon
+            int count = 0;
+
+            for (auto &e : edges) {
+                if (e.x1 == e.x2) { // vertical edge
+                    int x_edge = e.x1;
+                    int y_min = min(e.y1, e.y2);
+                    int y_max = max(e.y1, e.y2);
+
+                    if (x_edge > midx &&
+                        midy >= y_min &&
+                        midy < y_max) {
+                        count++;
+                    }
+                }
+            }
+
+            if (count % 2 == 1) {
+                cells.insert({x, y});
+            }
+        }
+    }
+
+    return cells;
+}
+
+void reflect(vector<Edge> &edges, string type) {
+    for (auto &e : edges) {
+        if (type == "mirror") {
+            e.x1 = -e.x1;
+            e.x2 = -e.x2;
+        } else {
+            e.y1 = -e.y1;
+            e.y2 = -e.y2;
+        }
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int N, M;
+    cin >> N >> M;
+
+    vector<Edge> fig1(N), fig2(M);
+
+    for (int i = 0; i < N; i++)
+        cin >> fig1[i].x1 >> fig1[i].y1 >> fig1[i].x2 >> fig1[i].y2;
+
+    for (int i = 0; i < M; i++)
+        cin >> fig2[i].x1 >> fig2[i].y1 >> fig2[i].x2 >> fig2[i].y2;
+
+    string type;
+    cin >> type;
+
+    // Reflect first figure
+    reflect(fig1, type);
+
+    // Build filled shapes
+    set<pair<int,int>> shape1 = buildShape(fig1);
+    set<pair<int,int>> shape2 = buildShape(fig2);
+
+    // Count overlap
+    int overlap = 0;
+    for (auto &cell : shape1) {
+        if (shape2.count(cell))
+            overlap++;
+    }
+
+    if (overlap > 0) {
+        cout << "YES\n";
+        cout << overlap;
+    } else {
+        cout << "NO";
+    }
+
+    return 0;
+}
