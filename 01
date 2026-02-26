@@ -1,0 +1,67 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+int n, k;
+vector<string> cl;
+string tar;
+vector<char> p;
+bool ok = false;
+vector<char> ans;
+
+int pos(char c){
+    for(int i=0;i<n;i++) if(p[i]==c) return i;
+    return -1;
+}
+
+int L(int i){ return (i-1+n)%n; }
+int R(int i){ return (i+1)%n; }
+int O(int i){ return (i+n/2)%n; }
+
+bool chk(){
+    for(auto s:cl){
+        char a = s[0];
+        char b = s.back();
+        string c = s.substr(1,s.size()-2);
+        int i = pos(a);
+        int j = pos(b);
+
+        if(c=="L" && p[L(i)]!=b) return false;
+        if(c=="R" && p[R(i)]!=b) return false;
+        if(c=="A" && !(p[L(i)]==b || p[R(i)]==b)) return false;
+        if(c=="O" && p[O(i)]!=b) return false;
+        if(c=="NL" && p[L(i)]==b) return false;
+        if(c=="NR" && p[R(i)]==b) return false;
+        if(c=="NA" && (p[L(i)]==b || p[R(i)]==b)) return false;
+        if(c=="NO" && p[O(i)]==b) return false;
+    }
+    return true;
+}
+
+void go(){
+    sort(p.begin(),p.end());
+    do{
+        if(chk()){
+            int i = pos(tar[0]);
+            ans = {p[L(i)], p[R(i)]};
+            ok = true;
+            return;
+        }
+    }while(next_permutation(p.begin(),p.end()));
+}
+
+int main(){
+    cin>>n;
+    cin>>k;
+    cl.resize(k);
+    for(int i=0;i<k;i++) cin>>cl[i];
+    cin>>tar;
+
+    for(int i=0;i<n;i++) p.push_back('A'+i);
+
+    if(n%2!=0){ cout<<"No valid seating possible"; return 0; }
+
+    go();
+
+    if(!ok) cout<<"No valid seating possible";
+    else cout<<ans[0]<<" "<<ans[1];
+}
