@@ -1,0 +1,75 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+struct P {
+    int x, y;
+};
+
+void flip(vector<P> &v, string t) {
+    for (int i = 0; i < v.size(); i++) {
+        if (t == "mirror") {
+            v[i].x = -v[i].x;
+        } else {
+            v[i].y = -v[i].y;
+        }
+    }
+}
+
+void box(vector<P> &v, int &mnx, int &mxx, int &mny, int &mxy) {
+    mnx = mxx = v[0].x;
+    mny = mxy = v[0].y;
+    for (int i = 1; i < v.size(); i++) {
+        mnx = min(mnx, v[i].x);
+        mxx = max(mxx, v[i].x);
+        mny = min(mny, v[i].y);
+        mxy = max(mxy, v[i].y);
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+
+    int n, m;
+    cin >> n >> m;
+
+    vector<P> a, b;
+    int x1, y1, x2, y2;
+
+    for (int i = 0; i < n; i++) {
+        cin >> x1 >> y1 >> x2 >> y2;
+        a.push_back({x1, y1});
+        a.push_back({x2, y2});
+    }
+
+    for (int i = 0; i < m; i++) {
+        cin >> x1 >> y1 >> x2 >> y2;
+        b.push_back({x1, y1});
+        b.push_back({x2, y2});
+    }
+
+    string t;
+    cin >> t;
+
+    flip(a, t);
+
+    int a1, a2, a3, a4;
+    int b1, b2, b3, b4;
+
+    box(a, a1, a2, a3, a4);
+    box(b, b1, b2, b3, b4);
+
+    int lx = max(a1, b1);
+    int rx = min(a2, b2);
+    int ly = max(a3, b3);
+    int ry = min(a4, b4);
+
+    if (lx < rx && ly < ry) {
+        cout << "YES\n";
+        cout << (rx - lx) * (ry - ly);
+    } else {
+        cout << "NO";
+    }
+
+    return 0;
+}
