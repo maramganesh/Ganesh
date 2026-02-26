@@ -1,0 +1,142 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int N, M;
+    cin >> N >> M;
+
+    int L;
+    cin >> L;
+
+    // vw[x][y] = vertical wall between (x-1,y) and (x,y)
+    bool vw[51][51] = {0};
+
+    // hw[x][y] = horizontal wall between (x,y-1) and (x,y)
+    bool hw[51][51] = {0};
+
+    for (int i = 0; i < L; i++) {
+        int x1, y1, x2, y2;
+        cin >> x1 >> y1 >> x2 >> y2;
+
+        // vertical line
+        if (x1 == x2) {
+            if (x1 < 0 || x1 > N) continue;
+
+            int a = max(0, min(y1, y2));
+            int b = min(M, max(y1, y2));
+
+            for (int y = a; y < b; y++) {
+                if (y >= 0 && y < M)
+                    vw[x1][y] = true;
+            }
+        }
+        // horizontal line
+        else if (y1 == y2) {
+            if (y1 < 0 || y1 > M) continue;
+
+            int a = max(0, min(x1, x2));
+            int b = min(N, max(x1, x2));
+
+            for (int x = a; x < b; x++) {
+                if (x >= 0 && x < N)
+                    hw[x][y1] = true;
+            }
+        }
+    }
+
+    int K;
+    cin >> K;
+
+    // Build connected components
+    vector<vector<int>> comp(N, vector<int>(M, -1));
+    int compCount = 0;
+
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < M; j++) {
+            if (comp[i][j] != -1) continue;
+
+            queue<pair<int,int>> q;
+            q.push({i,j});
+            comp[i][j] = compCount;
+
+            while (!q.empty()) {
+                auto [x,y] = q.front();
+                q.pop();
+
+                // up
+                if (x > 0 && !vw[x][y] && comp[x-1][y] == -1) {
+                    comp[x-1][y] = compCount;
+                    q.push({x-1,y});
+                }
+                // down
+                if (x < N-1 && !vw[x+1][y] && comp[x+1][y] == -1) {
+                    comp[x+1][y] = compCount;
+                    q.push({x+1,y});
+                }
+                // left
+                if (y > 0 && !hw[x][y] && comp[x][y-1] == -1) {
+                    comp[x][y-1] = compCount;
+                    q.push({x,y-1});
+                }
+                // right
+                if (y < M-1 && !hw[x][y+1] && comp[x][y+1] == -1) {
+                    comp[x][y+1] = compCount;
+                    q.push({x,y+1});
+                }
+            }
+            compCount++;
+        }
+    }
+
+    if (K > compCount) {
+        cout << "Impossible";
+        return 0;
+    }
+
+    int ans = INT_MAX;
+
+    // Sliding window over rows
+    for (int top = 0; top < N; top++) {
+        for (int bottom = top; bottom < N; bottom++) {
+
+            int height = bottom - top + 1;
+
+            vector<int> freq(compCount, 0);
+            int unique = 0;
+            int left = 0;
+
+            for (int right = 0; right < M; right++) {
+
+                for (int r = top; r <= bottom; r++) {
+                    int id = comp[r][right];
+                    if (freq[id] == 0) unique++;
+                    freq[id]++;
+                }
+
+                while (left <= right && unique >= K) {
+                    if (unique == K) {
+                        int width = right - left + 1;
+                        ans = min(ans, width * height);
+                    }
+
+                    for (int r = top; r <= bottom; r++) {
+                        int id = comp[r][left];
+                        freq[id]--;
+                        if (freq[id] == 0) unique--;
+                    }
+                    left++;
+                }
+            }
+        }
+    }
+
+    if (ans == INT_MAX)
+        cout << "Impossible";
+    else
+        cout << ans;
+
+    return 0;
+}
