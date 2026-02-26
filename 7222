@@ -1,0 +1,87 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+int R, C, N;
+int ans = 0;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    cin >> R >> C;
+    cin >> N;
+
+    int total = R * C;
+
+    vector<vector<pair<int,int>>> threat(N);
+
+    for (int i = 0; i < N; i++) {
+        int k;
+        cin >> k;
+        while (k--) {
+            int dr, dc;
+            cin >> dr >> dc;
+            threat[i].push_back({dr, dc});
+        }
+    }
+
+    function<void(int,int,int,int)> dfs =
+    [&](int id, int occupied, int threatened, int count) {
+
+        if (id == N) {
+            ans = max(ans, count);
+            return;
+        }
+
+        // Option 1: skip this traveler
+        dfs(id + 1, occupied, threatened, count);
+
+        // Option 2: try placing traveler id
+        for (int cell = 0; cell < total; cell++) {
+
+            // Already occupied
+            if (occupied & (1 << cell)) continue;
+
+            // Cell is threatened by someone else
+            if (threatened & (1 << cell)) continue;
+
+            int r = cell / C;
+            int c = cell % C;
+
+            bool valid = true;
+            int newThreat = 0;
+
+            // Check threats caused by this traveler
+            for (auto &t : threat[id]) {
+                int nr = r + t.first;
+                int nc = c + t.second;
+
+                if (nr < 0 || nr >= R || nc < 0 || nc >= C)
+                    continue;
+
+                int ncell = nr * C + nc;
+
+                // Cannot threaten an occupied cell
+                if (occupied & (1 << ncell)) {
+                    valid = false;
+                    break;
+                }
+
+                newThreat |= (1 << ncell);
+            }
+
+            if (!valid) continue;
+
+            dfs(id + 1,
+                occupied | (1 << cell),
+                threatened | newThreat,
+                count + 1);
+        }
+    };
+
+    dfs(0, 0, 0, 0);
+
+    cout << ans << "\n";
+
+    return 0;
+}
